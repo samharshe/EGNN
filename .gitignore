@@ -3,3 +3,5 @@ data/*
 
 # But don't ignore data.ipynb
 !data/data.ipynb
+
+model/wandb/*
