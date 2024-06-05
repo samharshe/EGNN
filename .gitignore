@@ -1,0 +1,5 @@
+# Ignore everything in the data directory
+data/*
+
+# But don't ignore data.ipynb
+!data/data.ipynb
