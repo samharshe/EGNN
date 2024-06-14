@@ -2,6 +2,6 @@
 data/*
 
 # But don't ignore data.ipynb
-!data/data.ipynb
+!data/script/*
 
 model/wandb/*
