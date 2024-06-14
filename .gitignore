@@ -7,3 +7,6 @@ data/*
 # ignore wandb nonsense
 model/wandb/*
 model/scripts/wandb/*
+
+# ignore pycache nonsense
+model/scripts/__pycache__/*
