@@ -1,7 +1,9 @@
-# Ignore everything in the data directory
+# ignore everything in the data directory because it's too big
 data/*
 
-# But don't ignore data.ipynb
+# but don't ignore data/script/* because that's how we load in the data
 !data/script/*
 
+# ignore wandb nonsense
 model/wandb/*
+model/script/wandb/*
