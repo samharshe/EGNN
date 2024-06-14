@@ -2,8 +2,8 @@
 data/*
 
 # but don't ignore data/script/* because that's how we load in the data
-!data/script/*
+!data/scripts/*
 
 # ignore wandb nonsense
 model/wandb/*
-model/script/wandb/*
+model/scripts/wandb/*
