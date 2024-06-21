@@ -1,36 +1,29 @@
+# PyTorch
 import torch
-from torch import Tensor
 
-import os
+# smarter force losses
+from loss import F_loss_fn
 
-from torch_geometric.nn import global_add_pool
-
-from losses import CalcF_squared_loss, CalcF_absolute_loss
-
+# wandb
 import wandb
 
-def train(model, optimizer, scheduler, loss_fn, train_loader, val_loader, config):
-    # setting up wandb
-    os.environ['WANDB_NOTEBOOK_NAME'] = 'train.ipynb'
-    wandb.login()
+# type annotations
+from torch_geometric.nn.conv import MessagePassing
+from torch_geometric.loader import DataLoader
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import LRScheduler
 
-    # reproducibility
-    torch.manual_seed(2002)
+from typing import Callable, Dict
 
+def train_model(model: MessagePassing, optimizer: Optimizer, scheduler: LRScheduler, loss_fn: Callable, train_loader: DataLoader, val_loader: DataLoader, rho: float, num_epochs: int, name: str) -> None:
     # learning rates
-    learning_rates = [config.base_learning_rate]
+    learning_rates = [optimizer.param_groups[0]['lr']]
 
-    # initialize wandb run
-    wandb.init(
-        project = "EGNN",
-        config = config,
-    )
-    
     # val statistics
     val_mean_losses = []
 
     # training loop occurs num_epochs times
-    for epoch in range(config.num_epochs):
+    for epoch in range(num_epochs):
         # TRAINING
         # track gradients
         model.train()
@@ -49,12 +42,13 @@ def train(model, optimizer, scheduler, loss_fn, train_loader, val_loader, config
             
             # predictions from the model
             E_hat, F_hat = model(data)
-            
+            E_hat.squeeze_(dim=1)
+
             # squared error for energy loss
-            E_loss = (1 - rho) * loss_fn(torch.squeeze(E_hat), E)
+            E_loss = (1 - rho) * loss_fn(E_hat, E)
 
             # a version of squared error for force loss
-            F_loss = rho * CalcF_squared_loss(F_hat, F)
+            F_loss = rho * F_loss_fn(F_hat, F, loss_fn)
             
             # canonical loss
             loss = E_loss + F_loss
@@ -92,12 +86,13 @@ def train(model, optimizer, scheduler, loss_fn, train_loader, val_loader, config
             
             # predictions from the model
             E_hat, F_hat = model(data)
+            E_hat.squeeze_(dim=1)
             
             # squared error for energy loss
-            E_loss = (1 - rho) * loss_fn(torch.squeeze(E_hat), E)
+            E_loss = (1 - rho) * loss_fn(E_hat, E)
             
             # a version of squared error for force loss
-            F_loss = rho * CalcF_squared_loss(F_hat, F)
+            F_loss = rho * F_loss_fn(F_hat, F, loss_fn)
             
             # canonical loss
             loss =  E_loss + F_loss
@@ -125,6 +120,7 @@ def train(model, optimizer, scheduler, loss_fn, train_loader, val_loader, config
         
         # if this is our best val performance yet, save the weights
         if min(val_mean_losses) == epoch_mean_loss:
-            torch.save(model, f'../weights/{config.name}.pth')
+            torch.save(model, f'../weights/{name}.pth')
             
+        # update lr based on mean loss of the previous epoch
         scheduler.step(epoch_mean_loss)

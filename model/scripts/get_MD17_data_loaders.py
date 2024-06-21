@@ -3,7 +3,10 @@ from torch_geometric.datasets import MD17
 from torch_geometric.loader import DataLoader
 from torch.utils.data import random_split
 
-def get_MD17_data_loaders(train_split, val_split, test_split, batch_size):
+# annotations
+from typing import Tuple
+
+def get_MD17_data_loaders(train_split: float, val_split: float, test_split: float, batch_size: int) -> Tuple[DataLoader, ...]:
     # make sure we are doing everything with the whole dataset
     s = train_split + val_split + test_split
     assert s == 1, f"train_split, val_split, and test_split must sum to 1. got: {s}"

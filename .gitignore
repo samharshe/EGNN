@@ -5,6 +5,7 @@ data/*
 !data/scripts/*
 
 # ignore wandb nonsense
+wandb/*
 model/wandb/*
 model/scripts/wandb/*
 

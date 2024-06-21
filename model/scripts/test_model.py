@@ -2,7 +2,7 @@
 import torch
 
 # smarter force losses
-from loss import F_loss
+from loss import F_loss_fn
 
 # logging results
 import wandb
@@ -12,16 +12,10 @@ from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.loader import DataLoader
 from typing import Callable, Dict
 
-def test(model: MessagePassing, loss_fn: Callable, test_loader: DataLoader, config: Dict) -> None:
+def test_model(model: MessagePassing, loss_fn: Callable, test_loader: DataLoader, rho: float) -> None:
     # do not track gradients
     model.eval()
     
-    # log everything
-    wandb.login()
-    
-    # concision
-    rho = config["rho"]
-
     # test statistics using the same loss function as training
     test_losses = []
     test_E_losses = []
@@ -40,13 +34,13 @@ def test(model: MessagePassing, loss_fn: Callable, test_loader: DataLoader, conf
         
         # predictions from the model
         E_hat, F_hat = model(data)
-        torch.squeeze_(E_hat)
+        E_hat.squeeze_(dim=1)
         
         # squared error for energy loss
         E_loss = (1-rho) * loss_fn(E_hat, E)
         
         # a version of squared error for force loss
-        F_loss = rho * F_loss(F_hat, F, loss_fn)
+        F_loss = rho * F_loss_fn(F_hat, F, loss_fn)
         
         # canonical loss
         loss = E_squared_loss + F_squared_loss
@@ -55,7 +49,7 @@ def test(model: MessagePassing, loss_fn: Callable, test_loader: DataLoader, conf
         E_absolute_loss = (1 - rho) * torch.mean(torch.abs(E_hat-E))
         
         # a version of absolute error for force loss
-        F_absolute_loss = rho * F_loss(F_hat, F, torch.mean)
+        F_absolute_loss = rho * F_loss_fn(F_hat, F, torch.mean)
         
         # absolute loss
         absolute_loss = E_absolute_loss + F_absolute_loss
