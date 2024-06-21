@@ -5,7 +5,7 @@ import os
 
 from torch_geometric.nn import global_add_pool
 
-from losses import CalcF_squared_loss, CalcF_absolute_loss
+from loss import F_loss
 
 import wandb
 
@@ -15,6 +15,9 @@ def test(model, loss_fn, test_loader, config):
     
     # to log everything
     wandb.login()
+    
+    # for concision
+    rho = config["rho"]
 
     # test statistics using the same loss function as training
     test_squared_losses = []
@@ -33,21 +36,22 @@ def test(model, loss_fn, test_loader, config):
         
         # predictions from the model
         E_hat, F_hat = model(data)
+        torch.squeeze_(E_hat)
         
         # squared error for energy loss
-        E_squared_loss = loss_fn(torch.squeeze(E_hat), E) * (1-rho)
+        E_squared_loss = (1-rho) * loss_fn(E_hat, E)
         
         # a version of squared error for force loss
-        F_squared_loss = CalcF_squared_loss(F_hat, F) * rho
+        F_squared_loss = rho * F_loss(F_hat, F, loss_fn)
         
         # canonical loss
         squared_loss = E_squared_loss + F_squared_loss
         
         # squared error for energy loss
-        E_absolute_loss = (1 - rho) * torch.mean(torch.abs(torch.squeeze(E_hat)-E))
+        E_absolute_loss = (1 - rho) * torch.mean(torch.abs(E_hat-E))
         
         # a version of squared error for force loss
-        F_absolute_loss = rho * CalcF_absolute_loss(F_hat, F)
+        F_absolute_loss = rho * F_loss(F_hat, F, torch.mean)
         
         # canonical loss
         absolute_loss = E_absolute_loss + F_absolute_loss
