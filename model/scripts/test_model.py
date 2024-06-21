@@ -3,6 +3,7 @@ import torch
 
 # smarter force losses
 from loss import F_loss_fn
+from torch.nn import L1Loss
 
 # logging results
 import wandb
@@ -43,21 +44,24 @@ def test_model(model: MessagePassing, loss_fn: Callable, test_loader: DataLoader
         F_loss = rho * F_loss_fn(F_hat, F, loss_fn)
         
         # canonical loss
-        loss = E_squared_loss + F_squared_loss
+        loss = E_loss + F_loss
+        
+        # absolute error 
+        absolute_loss_fn = L1Loss()
         
         # absolute error for energy loss
-        E_absolute_loss = (1 - rho) * torch.mean(torch.abs(E_hat-E))
+        E_absolute_loss = (1 - rho) * absolute_loss_fn(E_hat, E)
         
         # a version of absolute error for force loss
-        F_absolute_loss = rho * F_loss_fn(F_hat, F, torch.mean)
+        F_absolute_loss = rho * F_loss_fn(F_hat, F, absolute_loss_fn)
         
         # absolute loss
         absolute_loss = E_absolute_loss + F_absolute_loss
         
         # save squared losses
-        test_losses.append(squared_loss.item())
-        test_E_losses.append(E_squared_loss.item())
-        test_F_losses.append(F_squared_loss.item())
+        test_losses.append(loss.item())
+        test_E_losses.append(E_loss.item())
+        test_F_losses.append(F_loss.item())
         
         # save absolute losses
         test_absolute_losses.append(absolute_loss.item())
@@ -65,9 +69,9 @@ def test_model(model: MessagePassing, loss_fn: Callable, test_loader: DataLoader
         test_F_absolute_losses.append(F_absolute_loss.item())
         
     # calculate and log mean test losses
-    test_mean_loss = torch.mean(torch.tensor(test_squared_losses)).item()
-    test_mean_E_loss = torch.mean(torch.tensor(test_E_squared_losses)).item()
-    test_mean_F_loss = torch.mean(torch.tensor(test_F_squared_losses)).item()
+    test_mean_loss = torch.mean(torch.tensor(test_lossses)).item()
+    test_mean_E_loss = torch.mean(torch.tensor(test_E_losses)).item()
+    test_mean_F_loss = torch.mean(torch.tensor(test_F_losses)).item()
 
     wandb.log({"test_mean_loss": test_mean_loss})
     wandb.log({"test_mean_E_loss": test_mean_E_loss})
@@ -83,7 +87,7 @@ def test_model(model: MessagePassing, loss_fn: Callable, test_loader: DataLoader
     
     # print mean test losses
     print(f'TEST MEAN LOSS: {test_mean_loss}')
-    print(f'TEST MEAN ABSOLUTE LOSS: {test_mean_squared_loss}')
+    print(f'TEST MEAN ABSOLUTE LOSS: {test_mean_absolute_loss}')
 
     # end wandb run
     wandb.finish()

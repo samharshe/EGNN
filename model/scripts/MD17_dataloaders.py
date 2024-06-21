@@ -6,7 +6,7 @@ from torch.utils.data import random_split
 # annotations
 from typing import Tuple
 
-def get_MD17_data_loaders(train_split: float, val_split: float, test_split: float, batch_size: int) -> Tuple[DataLoader, ...]:
+def benzene(train_split: float, val_split: float, test_split: float, batch_size: int) -> Tuple[DataLoader, ...]:
     # make sure we are doing everything with the whole dataset
     s = train_split + val_split + test_split
     assert s == 1, f"train_split, val_split, and test_split must sum to 1. got: {s}"
